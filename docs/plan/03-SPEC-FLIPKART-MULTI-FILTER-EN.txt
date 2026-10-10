@@ -1,0 +1,149 @@
+================================================================
+P2-UPI-LEAK-DETECTOR — J2 / 5A SPEC
+Ticket: J2       | "Flipkart Multi-Filter Product Pipeline"
+Status: 🟡 ACTIVE → Debjeet Dhar (J1 proof passed, 10 Oct 2026)
+Type:   JIRA-STYLE, CODE-FREE
+Folder: PROJECTS/P2-UPI-LEAK-DETECTOR/PLAN/
+================================================================
+
+  🎯 ONE-LINE:
+     From a Flipkart-style product list, keep only mobile products
+     that pass budget, rating, and stock rules; return the final
+     result in ascending price order.
+
+----------------------------------------------------------------
+STORY (real problem)
+----------------------------------------------------------------
+  Shopping apps receive large product lists. A user combines category,
+  budget, rating, and availability filters. The pipeline must remove
+  unwanted products, create the small display shape, and show useful
+  ordering without changing the original list.
+
+----------------------------------------------------------------
+INPUT ROW SHAPE (array only)
+----------------------------------------------------------------
+  Every valid product row:
+
+      [name, category, price, rating, inStock] ====> [DONE]
+
+  Meaning: [DONE]
+      [0] name       string
+      [1] category   string
+      [2] price      finite number, zero or greater
+      [3] rating     finite number, 0 to 5
+      [4] inStock    boolean
+
+  Fixture:
+      Pixel 8       | Mobile      | 44999 | 4.4 | true
+      Moto G        | Mobile      | 14999 | 4.1 | true
+      Nokia G       | Mobile      |  8999 | 3.8 | true
+      iPhone 15     | Mobile      | 69999 | 4.7 | true
+      Galaxy A15    | Mobile      | 12999 | 4.0 | false
+      HP Laptop     | Electronics | 45999 | 4.5 | true
+      Realme C      | Mobile      | 50000 | 4.0 | true
+
+----------------------------------------------------------------
+FUNCTION CONTRACT
+----------------------------------------------------------------
+  Function name:
+      getFlipkartDeals(products)
+
+  Invalid outer input:
+      status 400, ok false, error message [ DONE ]
+
+  Valid outer input:
+      status 200, ok true, data, productsCount
+
+  Final data row shape:
+      [name, price, rating]
+
+----------------------------------------------------------------
+REQUIREMENTS (code-free rules)
+----------------------------------------------------------------
+  R1  If the outer input is not a list, return the normal 400 failure envelope. [DONE]
+
+  R2  Quietly skip malformed inner rows. A row is valid only when name and
+      category are non-empty strings, price and rating are finite numbers,
+      price is zero or greater, rating is between 0 and 5, and inStock is boolean. [DONE]
+
+  R3  Keep only the exact category "Mobile".[DONE]
+
+  R4  Keep only price less than or equal to 50,000. Exactly 50,000 is valid.[DONE]
+
+  R5  Keep only rating greater than or equal to 4. Exactly 4 is valid.[DONE]
+
+  R6  Keep only products where inStock is true.[DONE]
+
+  R7  Convert each final display row to [name, price, rating]. [DONE]
+
+  R8  Order final data from lowest price to highest price. [DONE]
+
+  R9  Do not mutate the original products list.[DONE]
+
+  R10 Empty or no-match input returns successful empty data, never a crash.
+
+----------------------------------------------------------------
+EXPECTED ACCEPTANCE
+----------------------------------------------------------------
+  Expected data for the fixture:
+
+      [
+        ["Moto G", 14999, 4.1],
+        ["Pixel 8", 44999, 4.4],
+        ["Realme C", 50000, 4.0]
+      ]
+
+  Rejection reasons:
+      Nokia G    → rating 3.8, reject
+      iPhone 15  → price 69,999, reject
+      Galaxy A15 → inStock false, reject
+      HP Laptop  → category is not Mobile, reject
+      Realme C   → boundary price 50,000, accept
+
+  Additional acceptance:
+      non-array input       → 400 failure envelope
+      []                    → 200 success, data [], productsCount 0
+      only bad rows         → 200 success, data [], productsCount 0
+      original input        → remains unchanged after the function
+      price order           → 14,999 then 44,999 then 50,000
+
+----------------------------------------------------------------
+THINKING TRIGGERS (J2 learning point)
+----------------------------------------------------------------
+  "Keep only matching products"       → filter thinking
+  "Change every product's display form" → map thinking
+  "Arrange by price"                  → sort thinking
+  "Preserve the original list"        → copy-first thinking
+
+  Pipeline sentence:
+      raw products → valid products → eligible products → display rows → price order
+
+----------------------------------------------------------------
+OUT OF SCOPE
+----------------------------------------------------------------
+  - Real Flipkart API or network request
+  - Login, cart, payment, UI, pagination
+  - Product objects; this ticket uses array rows
+  - Discount calculation, delivery fee, GST
+  - Duplicate-product policy
+  - Async code, database, Chrome APIs
+
+----------------------------------------------------------------
+DEFINITION OF DONE
+----------------------------------------------------------------
+  [ ] Seven acceptance cases pass: normal, boundary, invalid, empty,
+      malformed, no-match, and original-not-mutated
+  [ ] Can explain without looking: the role of filter, map, and sort
+  [ ] Can explain the boundary rules: price 50,000 and rating 4 pass
+  [ ] Proved that the original input is unchanged
+  [ ] Code saved in P2/CODE/src/under a filename Debjeet chooses
+  [ ] Expected versus actual output sent for review
+  [ ] Tracker updated: J2 ✅; then J3 unlocks
+
+  TIME-BOX: 20 minutes paper + 20 minutes typing/testing. No rush.
+  "One pipeline, one proof, then the next project."
+
+
+================================================================
+END — 03-SPEC-FLIPKART-MULTI-FILTER-EN.txt
+================================================================

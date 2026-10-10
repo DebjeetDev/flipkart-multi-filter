@@ -1,0 +1,151 @@
+================================================================
+P2-UPI-LEAK-DETECTOR — J2 / 5A SPEC
+Ticket: J2       | "Flipkart Multi-Filter Product Pipeline"
+Status: 🟡 ACTIVE → Debjeet Dhar (J1 proof passed, 10 Oct 2026)
+Type:   JIRA-STYLE, CODE-FREE
+Folder: PROJECTS/P2-UPI-LEAK-DETECTOR/PLAN/
+================================================================
+
+  🎯 ONE-LINE:
+     Flipkart-style product list se sirf wahi mobile products nikalo
+     jo budget, rating, aur stock ke rules pass karte hain; final
+     result ko small-to-large price order mein do.
+
+----------------------------------------------------------------
+STORY (real problem)
+----------------------------------------------------------------
+  Shopping apps mein product list bahut badi hoti hai. User ek saath
+  category, budget, rating, aur availability choose karta hai. Product
+  pipeline ko unwanted products safely chhaantna, final display shape
+  banana, aur useful order mein dikhana hota hai.
+
+  Bengali:
+     অনেক product-এর মধ্যে user-এর rule মেনে চলা product-গুলোই রাখতে হবে,
+     তারপর screen-এর জন্য ছোট final shape এবং price order দিতে হবে।
+
+----------------------------------------------------------------
+INPUT ROW SHAPE (array only)
+----------------------------------------------------------------
+  Har valid product row:
+
+      [name, category, price, rating, inStock]
+
+  Meaning:
+      [0] name       string
+      [1] category   string
+      [2] price      finite number, zero or greater
+      [3] rating     finite number, 0 to 5
+      [4] inStock    boolean
+
+  Fixture:
+      Pixel 8       | Mobile      | 44999 | 4.4 | true
+      Moto G        | Mobile      | 14999 | 4.1 | true
+      Nokia G       | Mobile      |  8999 | 3.8 | true
+      iPhone 15     | Mobile      | 69999 | 4.7 | true
+      Galaxy A15    | Mobile      | 12999 | 4.0 | false
+      HP Laptop     | Electronics | 45999 | 4.5 | true
+      Realme C      | Mobile      | 50000 | 4.0 | true
+
+----------------------------------------------------------------
+FUNCTION CONTRACT
+----------------------------------------------------------------
+  Function name:
+      getFlipkartDeals(products)
+
+  Invalid outer input:
+      status 400, ok false, error message
+
+  Valid outer input:
+      status 200, ok true, data, productsCount
+
+  Final data row shape:
+      [name, price, rating]
+
+----------------------------------------------------------------
+REQUIREMENTS (code-free rules)
+----------------------------------------------------------------
+  R1  Outer input list nahi hai → normal 400 failure envelope.
+
+  R2  Malformed inner row quietly skip karo. Row tabhi valid hai jab:
+      name/category non-empty strings, price/rating finite numbers,
+      price zero or greater, rating 0–5, aur inStock boolean ho.
+
+  R3  Sirf category exactly "Mobile" rakho.
+
+  R4  Sirf price 50,000 ya usse kam rakho. Exactly 50,000 valid hai.
+
+  R5  Sirf rating 4 ya usse zyada rakho. Exactly 4 valid hai.
+
+  R6  Sirf inStock true wale products rakho.
+
+  R7  Final display row ko [name, price, rating] shape mein lao.
+
+  R8  Final data ko price ke hisaab se small-to-large order mein do.
+
+  R9  Original products list ko mutate nahi karna.
+
+  R10 Empty ya no-match input → successful empty data, crash nahi.
+
+----------------------------------------------------------------
+EXPECTED ACCEPTANCE
+----------------------------------------------------------------
+  Fixture ke liye expected data:
+
+      [
+        ["Moto G", 14999, 4.1],
+        ["Pixel 8", 44999, 4.4],
+        ["Realme C", 50000, 4.0]
+      ]
+
+  Kyon:
+      Nokia G    → rating 3.8, reject
+      iPhone 15  → price 69,999, reject
+      Galaxy A15 → inStock false, reject
+      HP Laptop  → category Mobile nahi, reject
+      Realme C   → boundary price 50,000, accept
+
+  Additional acceptance:
+      non-array input       → 400 failure envelope
+      []                    → 200 success, data [], productsCount 0
+      only bad rows         → 200 success, data [], productsCount 0
+      original input        → function ke baad same rahe
+      price order           → 14,999 then 44,999 then 50,000
+
+----------------------------------------------------------------
+THINKING TRIGGERS (J2 ka learning point)
+----------------------------------------------------------------
+  "Sirf matching products rakho"       → filter thinking
+  "Har product ka display shape badlo"  → map thinking
+  "Price order mein arrange karo"       → sort thinking
+  "Original list bachani hai"           → copy-first thinking
+
+  Pipeline sentence:
+      raw products → valid products → eligible products → display rows → price order
+
+----------------------------------------------------------------
+OUT OF SCOPE
+----------------------------------------------------------------
+  - Real Flipkart API ya network request
+  - Login, cart, payment, UI, pagination
+  - Product objects; is ticket mein rows arrays hain
+  - Discount calculation, delivery fee, GST
+  - Duplicate product policy
+  - Async code, database, Chrome APIs
+
+----------------------------------------------------------------
+DEFINITION OF DONE
+----------------------------------------------------------------
+  [ ] 7 acceptance cases pass: normal, boundary, invalid, empty,
+      malformed, no-match, original-not-mutated
+  [ ] Bina dekhe explain: filter, map, sort ka role
+  [ ] Boundary rules explain: price 50,000 and rating 4 accepted
+  [ ] Original input unchanged prove kiya
+  [ ] Code P2/CODE/src/ mein Debjeet ke chosen filename mein save
+  [ ] Expected vs actual output bheja
+  [ ] Tracker update: J2 ✅; phir J3 unlock
+
+  TIME-BOX: 20 min paper + 20 min typing/testing. RUSH NAHI.
+  "One pipeline, one proof, then next project."
+================================================================
+END — 03-SPEC-FLIPKART-MULTI-FILTER.txt
+================================================================
