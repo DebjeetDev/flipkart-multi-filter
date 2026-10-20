@@ -8,10 +8,13 @@ const products = [
   ["Realme C", "Mobile", 50000, 4.0, true],
 ];
 
+const RULES = {
+  maxPrice: 50000,
+  minRating: 4.1
+};
+
 const isString = (value) => typeof value === "string" && value.trim() !== "";
-
 const isNumber = (value) => typeof value === "number" && Number.isFinite(value);
-
 const isBoolean = (value) => typeof value === "boolean";
 
 function getFlipkartDeals(products) {
@@ -27,7 +30,8 @@ function getFlipkartDeals(products) {
     if (!Array.isArray(product)) return acc;
 
     const [name, category, price, rating, inStock] = product;
-   if (
+
+    if (
       !isString(name) ||
       !isString(category) ||
       !isNumber(price) ||
@@ -39,25 +43,33 @@ function getFlipkartDeals(products) {
     ) {
       return acc;
     }
+
     acc.push([name, category, price, rating, inStock]);
     return acc;
   }, []);
 
   const eligibleProducts = cleanProducts.filter(
-    (p) => p[1] === "Mobile" && p[2] <= 50000 && p[3] >= 4 && p[4] === true,
+    ([name, category, price, rating, inStock]) =>
+      category === "Mobile" &&
+      price <= RULES.maxPrice &&
+      rating >= RULES.minRating &&
+      inStock === true
   );
 
   const displayRows = eligibleProducts
-    .map((m) => [m[0], m[2], m[3]])
-    .toSorted((a, b) => a[1] - b[1]);
+    .map(([name, category, price, rating]) => ({
+      name,
+      price,
+      rating
+    }))
+    .toSorted((a, b) => a.price - b.price);
 
   return {
     status: 200,
     ok: true,
     data: displayRows,
-    productsCount : displayRows.length
+    productsCount: displayRows.length
   };
 }
 
-// console.log(getFlipkartDeals(products))
-module.exports = { getFlipkartDeals };
+console.log(getFlipkartDeals(products));
